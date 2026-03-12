@@ -252,7 +252,7 @@ def get_lhb(date: str, top_n: int = 5) -> Dict[str, Any]:
         top_n: 热门行业TOP N
 
     Returns:
-        Dict: 包含信号、原始数据等信息
+        Dict: 标准格式的指标结果
     """
     try:
         df_lhb, total_net = fetch_lhb_institution_flow(start_date=date)
@@ -260,13 +260,16 @@ def get_lhb(date: str, top_n: int = 5) -> Dict[str, Any]:
 
         if total_net > 0:
             signal = "多"
-            score = 1
+            signal_value = 1
         elif total_net < 0:
             signal = "空"
-            score = -1
+            signal_value = -1
         else:
             signal = "中性"
-            score = 0
+            signal_value = 0
+        
+        weight = 1
+        score = signal_value * weight
 
         hot_buy = None
         hot_sell = None
@@ -277,25 +280,30 @@ def get_lhb(date: str, top_n: int = 5) -> Dict[str, Any]:
 
         return {
             "metric_id": "lhb",
-            "name": "龙虎榜",
-            "name_en": "Long-Hu Bang",
-            "date": date,
-            "total_net": total_net,
-            "record_count": len(df_lhb),
+            "name": "龙虎榜机构",
             "signal": signal,
-            "signal_desc": signal_desc,
+            "signal_value": signal_value,
+            "weight": weight,
             "score": score,
-            "hot_buy": hot_buy.to_dict() if hot_buy is not None else None,
-            "hot_sell": hot_sell.to_dict() if hot_sell is not None else None,
+            "detail": {
+                "date": date,
+                "total_net": total_net,
+                "record_count": len(df_lhb),
+                "signal_desc": signal_desc,
+                "hot_buy": hot_buy.to_dict() if hot_buy is not None else None,
+                "hot_sell": hot_sell.to_dict() if hot_sell is not None else None
+            },
             "error": None
         }
     except Exception as e:
         return {
             "metric_id": "lhb",
-            "name": "龙虎榜",
-            "date": date,
+            "name": "龙虎榜机构",
             "signal": "中性",
+            "signal_value": 0,
+            "weight": 1,
             "score": 0,
+            "detail": {},
             "error": str(e)
         }
 

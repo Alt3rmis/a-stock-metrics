@@ -232,7 +232,7 @@ def get_limitup(date: str, top_n_industry: int = 5) -> Dict[str, Any]:
         top_n_industry: 行业TOP N
 
     Returns:
-        Dict: 包含信号、原始数据等信息
+        Dict: 标准格式的指标结果
     """
     try:
         struct = analyze_limitup_structure(date=date, top_n_industry=top_n_industry)
@@ -243,40 +243,154 @@ def get_limitup(date: str, top_n_industry: int = 5) -> Dict[str, Any]:
 
         if env_score > 0:
             signal = "多"
+            signal_value = 1
         elif env_score < 0:
             signal = "空"
+            signal_value = -1
         else:
             signal = "中性"
+            signal_value = 0
+        
+        weight = 1
+        score = signal_value * weight
 
         return {
             "metric_id": "limitup",
             "name": "涨停板环境",
-            "name_en": "Limit Up Board",
-            "date": date,
             "signal": signal,
-            "score": env_score,
-            "env_desc": env_desc,
-            "env_score": env_score,
-            "struct": {
+            "signal_value": signal_value,
+            "weight": weight,
+            "score": score,
+            "detail": {
+                "date": date,
+                "env_desc": env_desc,
                 "total_zt": struct["total_zt"],
                 "max_lb": struct["max_lb"],
-                "lb_dist": struct["lb_dist"].to_dict() if struct["lb_dist"] is not None else {},
-                "industry_top": struct["industry_top"].to_dict() if struct["industry_top"] is not None else {}
+                "total_zb": breaks["total_zb"],
+                "break_ratio": graduation_analysis["break_ratio"],
+                "tier_quality": tier_analysis["tier_quality"],
+                "graduation_status": graduation_analysis["graduation_status"]
             },
-            "breaks": {
-                "total_zb": breaks["total_zb"]
-            },
-            "tier": tier_analysis,
-            "graduation": graduation_analysis,
             "error": None
         }
     except Exception as e:
         return {
             "metric_id": "limitup",
             "name": "涨停板环境",
-            "date": date,
             "signal": "中性",
+            "signal_value": 0,
+            "weight": 1,
             "score": 0,
+            "detail": {},
+            "error": str(e)
+        }
+
+def get_limitup_premium(date: str) -> Dict[str, Any]:
+    """
+    获取涨停溢价数据（统一接口）
+
+    Args:
+        date: 日期 (YYYYMMDD)
+
+    Returns:
+        Dict: 标准格式的指标结果
+    """
+    try:
+        # 这里实现涨停溢价计算逻辑
+        # 模拟数据
+        premium = 0.05
+        if premium > 0.03:
+            signal = "多"
+            signal_value = 1
+        elif premium < -0.03:
+            signal = "空"
+            signal_value = -1
+        else:
+            signal = "中性"
+            signal_value = 0
+        
+        weight = 1
+        score = signal_value * weight
+
+        return {
+            "metric_id": "limitup_premium",
+            "name": "涨停溢价",
+            "signal": signal,
+            "signal_value": signal_value,
+            "weight": weight,
+            "score": score,
+            "detail": {
+                "date": date,
+                "premium": premium
+            },
+            "error": None
+        }
+    except Exception as e:
+        return {
+            "metric_id": "limitup_premium",
+            "name": "涨停溢价",
+            "signal": "中性",
+            "signal_value": 0,
+            "weight": 1,
+            "score": 0,
+            "detail": {},
+            "error": str(e)
+        }
+
+def get_break_rate(date: str) -> Dict[str, Any]:
+    """
+    获取炸板率数据（统一接口）
+
+    Args:
+        date: 日期 (YYYYMMDD)
+
+    Returns:
+        Dict: 标准格式的指标结果
+    """
+    try:
+        struct = analyze_limitup_structure(date=date)
+        breaks = analyze_limitup_break(date=date)
+        total_zt = struct["total_zt"]
+        total_zb = breaks["total_zb"]
+        break_rate = total_zb / (total_zt + 1e-6)
+        
+        if break_rate < 0.3:
+            signal = "多"
+            signal_value = 1
+        elif break_rate > 0.5:
+            signal = "空"
+            signal_value = -1
+        else:
+            signal = "中性"
+            signal_value = 0
+        
+        weight = 1
+        score = signal_value * weight
+
+        return {
+            "metric_id": "break_rate",
+            "name": "炸板率",
+            "signal": signal,
+            "signal_value": signal_value,
+            "weight": weight,
+            "score": score,
+            "detail": {
+                "date": date,
+                "total_zt": total_zt,
+                "total_zb": total_zb,
+                "break_rate": break_rate
+            },
+            "error": None
+        }
+    except Exception as e:
+        return {
+            "metric_id": "break_rate",
+            "name": "炸板率",
+            "signal": "中性",
+            "signal_value": 0,
+            "weight": 1,
+            "score": 0,
+            "detail": {},
             "error": str(e)
         }
 

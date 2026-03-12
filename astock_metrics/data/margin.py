@@ -104,15 +104,7 @@ def get_margin(days: int = 3) -> Dict[str, Any]:
         days: 计算变化的天数
 
     Returns:
-        Dict: 包含信号、原始数据等信息
-            - latest_date: 最新日期
-            - start: 起始余额
-            - end: 当前余额
-            - delta: 变化额
-            - days: 天数
-            - signal: 信号 ("多"/"空"/"中性")
-            - signal_desc: 信号描述
-            - score: 分值 (+1/-1/0)
+        Dict: 标准格式的指标结果
     """
     try:
         latest_date, start, end, delta = fetch_total_margin_change(days=days)
@@ -120,25 +112,32 @@ def get_margin(days: int = 3) -> Dict[str, Any]:
 
         if delta > 0:
             signal = "多"
-            score = 1
+            signal_value = 1
         elif delta < 0:
             signal = "空"
-            score = -1
+            signal_value = -1
         else:
             signal = "中性"
-            score = 0
+            signal_value = 0
+        
+        weight = 1
+        score = signal_value * weight
 
         return {
             "metric_id": "margin",
             "name": "融资融券",
-            "latest_date": str(latest_date),
-            "start": start,
-            "end": end,
-            "delta": delta,
-            "days": days,
             "signal": signal,
-            "signal_desc": signal_desc,
+            "signal_value": signal_value,
+            "weight": weight,
             "score": score,
+            "detail": {
+                "latest_date": str(latest_date),
+                "start": start,
+                "end": end,
+                "delta": delta,
+                "days": days,
+                "signal_desc": signal_desc
+            },
             "error": None
         }
     except Exception as e:
@@ -146,7 +145,10 @@ def get_margin(days: int = 3) -> Dict[str, Any]:
             "metric_id": "margin",
             "name": "融资融券",
             "signal": "中性",
+            "signal_value": 0,
+            "weight": 1,
             "score": 0,
+            "detail": {},
             "error": str(e)
         }
 
